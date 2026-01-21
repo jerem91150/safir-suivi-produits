@@ -65,6 +65,62 @@ async function main() {
 
   console.log('Utilisateurs de test créés:', editeur.login, lecteur.login);
 
+  // ========== UTILISATEURS SAFIR ==========
+
+  // Mot de passe par défaut pour tous les utilisateurs SAFIR
+  const defaultPassword = await bcrypt.hash('Safir2025!', 10);
+
+  // --- LECTEURS ---
+  const lecteurs = [
+    { login: 'muriel.deloumeaux', nom: 'Muriel DELOUMEAUX', email: 'muriel.deloumeaux@portesafir.com' },
+    { login: 'wahiba.boussetta', nom: 'Wahiba BOUSSETTA', email: 'wahiba.boussetta@portesafir.com' },
+    { login: 'beatrice.meder', nom: 'Béatrice MEDER', email: 'beatrice.meder@portesafir.com' },
+    { login: 'xavier.guerard', nom: 'Xavier GUERARD', email: 'xavier.guerard@accedia.net' },
+  ];
+
+  for (const user of lecteurs) {
+    await prisma.utilisateur.upsert({
+      where: { login: user.login },
+      update: {},
+      create: {
+        login: user.login,
+        password: defaultPassword,
+        nom: user.nom,
+        email: user.email,
+        role: 'LECTEUR',
+        actif: true
+      }
+    });
+  }
+  console.log('Lecteurs SAFIR créés:', lecteurs.map(u => u.login).join(', '));
+
+  // --- EDITEURS ---
+  const editeurs = [
+    { login: 'jerome.bouvet', nom: 'Jérôme BOUVET', email: 'jerome.bouvet@portesafir.com' },
+    { login: 'sebastien.dupin', nom: 'Sébastien DUPIN', email: 'sebastien.dupin@portesafir.com' },
+    { login: 'regis.besson', nom: 'Régis BESSON', email: 'regis.besson@portesafir.com' },
+    { login: 'jc.quesnel', nom: 'Jean-Christophe QUESNEL', email: 'jc.quesnel@accedia.net' },
+    { login: 'rudy.moutsi', nom: 'Rudy MOUTSI', email: 'rudy.moutsi@portesafir.com' },
+    { login: 'jeremy.porteron', nom: 'Jérémy PORTERON', email: 'jeremy.porteron@portesafir.com' },
+    { login: 'thierry.dumonteil', nom: 'Thierry DUMONTEIL', email: 'thierry.dumonteil@portesafir.com' },
+  ];
+
+  for (const user of editeurs) {
+    await prisma.utilisateur.upsert({
+      where: { login: user.login },
+      update: {},
+      create: {
+        login: user.login,
+        password: defaultPassword,
+        nom: user.nom,
+        email: user.email,
+        role: 'EDITEUR',
+        actif: true
+      }
+    });
+  }
+  console.log('Éditeurs SAFIR créés:', editeurs.map(u => u.login).join(', '));
+
   // Créer quelques fiches de suivi de démonstration
   const ficheDemo1 = await prisma.ficheSuivi.upsert({
     where: { reference: 'COU.001' },
