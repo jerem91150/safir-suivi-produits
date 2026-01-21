@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # Base de données PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: safir_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: safir
+      POSTGRES_PASSWORD: safir_password
+      POSTGRES_DB: safir_suivi
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U safir -d safir_suivi"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API (pour production)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: safir_backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://safir:safir_password@postgres:5432/safir_suivi?schema=public
+      JWT_SECRET: ${JWT_SECRET:-votre_secret_jwt_production}
+      JWT_EXPIRES_IN: 24h
+      PORT: 3001
+      UPLOAD_DIR: /app/uploads
+    ports:
+      - "3001:3001"
+    volumes:
+      - uploads_data:/app/uploads
+
+  # Frontend (pour production)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: safir_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  postgres_data:
+  uploads_data:

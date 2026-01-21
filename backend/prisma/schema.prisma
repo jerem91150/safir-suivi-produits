@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Utilisateur {
+  id        Int      @id @default(autoincrement())
+  login     String   @unique
+  password  String
+  nom       String
+  email     String?
+  role      String   @default("LECTEUR")
+  actif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  fiches FicheSuivi[]
+
+  @@map("utilisateurs")
+}
+
+model FicheSuivi {
+  id          Int      @id @default(autoincrement())
+  reference   String   @unique
+  gamme       String
+  modele      String
+  titre       String
+  description String?
+  matricules  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createurId Int
+  createur   Utilisateur @relation(fields: [createurId], references: [id])
+
+  piecesJointes PieceJointe[]
+
+  @@index([gamme])
+  @@index([modele])
+  @@map("fiches_suivi")
+}
+
+model PieceJointe {
+  id         Int      @id @default(autoincrement())
+  nomFichier String
+  chemin     String
+  typeMime   String
+  taille     Int
+  createdAt  DateTime @default(now())
+
+  ficheId Int
+  fiche   FicheSuivi @relation(fields: [ficheId], references: [id], onDelete: Cascade)
+
+  @@map("pieces_jointes")
+}
