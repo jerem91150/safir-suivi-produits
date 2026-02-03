@@ -47,22 +47,23 @@ export const fichesApi = {
   list: (params?: {
     gamme?: string;
     modele?: string;
+    codeX3?: string;
     search?: string;
     page?: number;
     limit?: number;
   }) => api.get('/fiches', { params }),
   getFilters: () => api.get('/fiches/filters'),
   get: (id: number) => api.get(`/fiches/${id}`),
-  create: (data: {
-    reference: string;
-    gamme: string;
-    modele: string;
-    titre: string;
-    description?: string;
-    matricules?: string;
-  }) => api.post('/fiches', data),
+  create: (data: any) => api.post('/fiches', data),
   update: (id: number, data: any) => api.put(`/fiches/${id}`, data),
   delete: (id: number) => api.delete(`/fiches/${id}`),
+};
+
+// Achats Temporaires API
+export const achatsApi = {
+  create: (ficheId: number, data: any) => api.post(`/fiches/${ficheId}/achats`, data),
+  update: (ficheId: number, achatId: number, data: any) => api.put(`/fiches/${ficheId}/achats/${achatId}`, data),
+  delete: (ficheId: number, achatId: number) => api.delete(`/fiches/${ficheId}/achats/${achatId}`),
 };
 
 // Uploads API

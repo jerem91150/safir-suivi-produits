@@ -14,7 +14,15 @@ import {
   Divider,
   Tooltip,
   Breadcrumb,
+  Table,
+  Modal,
+  Form,
+  Input,
+  InputNumber,
+  DatePicker,
+  Select,
 } from 'antd';
+import dayjs from 'dayjs';
 import {
   ArrowLeftOutlined,
   EditOutlined,
@@ -36,9 +44,12 @@ import {
   ToolOutlined,
   CheckCircleOutlined,
   RocketOutlined,
+  BarcodeOutlined,
+  PlusOutlined,
+  ShoppingCartOutlined,
 } from '@ant-design/icons';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { fichesApi, uploadsApi } from '../services/api';
+import { fichesApi, uploadsApi, achatsApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { COLORS } from '../theme/colors';
 
@@ -50,6 +61,19 @@ interface PieceJointe {
   chemin: string;
   typeMime: string;
   taille: number;
+  createdAt: string;
+}
+
+interface AchatTemporaire {
+  id: number;
+  designation: string;
+  fournisseur: string | null;
+  quantite: number | null;
+  prixUnitaire: number | null;
+  dateDebut: string | null;
+  dateFin: string | null;
+  motif: string | null;
+  statut: string;
   createdAt: string;
 }
 
@@ -66,10 +90,13 @@ interface Fiche {
   organe: string | null;
   valideRdLe: string | null;
   enFabricationDepuis: string | null;
+  nomPieceTolerie: string | null;
+  codeX3: string | null;
   createdAt: string;
   updatedAt: string;
   createur: { id: number; nom: string; email: string | null };
   piecesJointes: PieceJointe[];
+  achatsTemporaires: AchatTemporaire[];
 }
 
 const getFileIcon = (typeMime: string) => {
@@ -96,20 +123,23 @@ const FicheDetail: React.FC = () => {
 
   const [fiche, setFiche] = useState<Fiche | null>(null);
   const [loading, setLoading] = useState(true);
+  const [achatModalVisible, setAchatModalVisible] = useState(false);
+  const [editingAchat, setEditingAchat] = useState<AchatTemporaire | null>(null);
+  const [achatForm] = Form.useForm();
+
+  const loadFiche = async () => {
+    try {
+      const response = await fichesApi.get(parseInt(id!));
+      setFiche(response.data);
+    } catch (error) {
+      message.error('Erreur lors du chargement de la fiche');
+      navigate('/');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadFiche = async () => {
-      try {
-        const response = await fichesApi.get(parseInt(id!));
-        setFiche(response.data);
-      } catch (error) {
-        message.error('Erreur lors du chargement de la fiche');
-        navigate('/');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadFiche();
   }, [id, navigate]);
 
@@ -148,6 +178,73 @@ const FicheDetail: React.FC = () => {
   const getImageUrl = (chemin: string) => {
     const token = localStorage.getItem('token');
     return `${API_URL.replace('/api', '')}/uploads/${chemin}?token=${token}`;
+  };
+
+  // Gestion des achats temporaires
+  const handleAddAchat = () => {
+    setEditingAchat(null);
+    achatForm.resetFields();
+    setAchatModalVisible(true);
+  };
+
+  const handleEditAchat = (achat: AchatTemporaire) => {
+    setEditingAchat(achat);
+    achatForm.setFieldsValue({
+      ...achat,
+      dateDebut: achat.dateDebut ? dayjs(achat.dateDebut) : null,
+      dateFin: achat.dateFin ? dayjs(achat.dateFin) : null,
+    });
+    setAchatModalVisible(true);
+  };
+
+  const handleDeleteAchat = async (achatId: number) => {
+    try {
+      await achatsApi.delete(parseInt(id!), achatId);
+      message.success('Achat supprimé');
+      loadFiche();
+    } catch (error) {
+      message.error('Erreur lors de la suppression');
+    }
+  };
+
+  const handleAchatSubmit = async (values: any) => {
+    try {
+      const payload = {
+        ...values,
+        dateDebut: values.dateDebut?.toISOString() || null,
+        dateFin: values.dateFin?.toISOString() || null,
+      };
+
+      if (editingAchat) {
+        await achatsApi.update(parseInt(id!), editingAchat.id, payload);
+        message.success('Achat modifié');
+      } else {
+        await achatsApi.create(parseInt(id!), payload);
+        message.success('Achat ajouté');
+      }
+      setAchatModalVisible(false);
+      loadFiche();
+    } catch (error) {
+      message.error('Erreur lors de l\'enregistrement');
+    }
+  };
+
+  const getStatutColor = (statut: string) => {
+    switch (statut) {
+      case 'EN_COURS': return 'processing';
+      case 'TERMINE': return 'success';
+      case 'ANNULE': return 'default';
+      default: return 'default';
+    }
+  };
+
+  const getStatutLabel = (statut: string) => {
+    switch (statut) {
+      case 'EN_COURS': return 'En cours';
+      case 'TERMINE': return 'Terminé';
+      case 'ANNULE': return 'Annulé';
+      default: return statut;
+    }
   };
 
   if (loading) {
@@ -465,6 +562,127 @@ const FicheDetail: React.FC = () => {
               </div>
             </Card>
           )}
+
+          {/* Achats Temporaires */}
+          <Card
+            style={{
+              borderRadius: 16,
+              border: 'none',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+              marginTop: 24,
+            }}
+            title={
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Space>
+                  <ShoppingCartOutlined style={{ color: COLORS.primary }} />
+                  <span>Achats Temporaires ({fiche.achatsTemporaires?.length || 0})</span>
+                </Space>
+                {canEdit && (
+                  <Button
+                    type="primary"
+                    size="small"
+                    icon={<PlusOutlined />}
+                    onClick={handleAddAchat}
+                    style={{
+                      background: `linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.primaryDark} 100%)`,
+                      border: 'none',
+                    }}
+                  >
+                    Ajouter
+                  </Button>
+                )}
+              </div>
+            }
+          >
+            {fiche.achatsTemporaires && fiche.achatsTemporaires.length > 0 ? (
+              <Table
+                dataSource={fiche.achatsTemporaires}
+                rowKey="id"
+                size="small"
+                pagination={false}
+                columns={[
+                  {
+                    title: 'Désignation',
+                    dataIndex: 'designation',
+                    key: 'designation',
+                  },
+                  {
+                    title: 'Fournisseur',
+                    dataIndex: 'fournisseur',
+                    key: 'fournisseur',
+                  },
+                  {
+                    title: 'Qté',
+                    dataIndex: 'quantite',
+                    key: 'quantite',
+                    width: 60,
+                  },
+                  {
+                    title: 'Prix unit.',
+                    dataIndex: 'prixUnitaire',
+                    key: 'prixUnitaire',
+                    width: 80,
+                    render: (val: number | null) => val ? `${val.toFixed(2)} €` : '-',
+                  },
+                  {
+                    title: 'Période',
+                    key: 'periode',
+                    width: 180,
+                    render: (_: any, record: AchatTemporaire) => {
+                      const debut = record.dateDebut ? new Date(record.dateDebut).toLocaleDateString('fr-FR') : '';
+                      const fin = record.dateFin ? new Date(record.dateFin).toLocaleDateString('fr-FR') : '';
+                      if (debut && fin) return `${debut} → ${fin}`;
+                      if (debut) return `Depuis ${debut}`;
+                      return '-';
+                    },
+                  },
+                  {
+                    title: 'Statut',
+                    dataIndex: 'statut',
+                    key: 'statut',
+                    width: 100,
+                    render: (statut: string) => (
+                      <Tag color={getStatutColor(statut)}>{getStatutLabel(statut)}</Tag>
+                    ),
+                  },
+                  ...(canEdit ? [{
+                    title: '',
+                    key: 'actions',
+                    width: 80,
+                    render: (_: any, record: AchatTemporaire) => (
+                      <Space size="small">
+                        <Tooltip title="Modifier">
+                          <Button
+                            type="link"
+                            size="small"
+                            icon={<EditOutlined />}
+                            onClick={() => handleEditAchat(record)}
+                          />
+                        </Tooltip>
+                        <Popconfirm
+                          title="Supprimer cet achat ?"
+                          onConfirm={() => handleDeleteAchat(record.id)}
+                          okText="Oui"
+                          cancelText="Non"
+                        >
+                          <Button
+                            type="link"
+                            size="small"
+                            danger
+                            icon={<DeleteOutlined />}
+                          />
+                        </Popconfirm>
+                      </Space>
+                    ),
+                  }] : []),
+                ]}
+              />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '20px 0', color: COLORS.gray[400] }}>
+                Aucun achat temporaire enregistré
+              </div>
+            )}
+          </Card>
         </Col>
 
         {/* Sidebar */}
@@ -524,6 +742,33 @@ const FicheDetail: React.FC = () => {
                   </div>
                   <Text strong style={{ fontSize: 15 }}>{fiche.organe}</Text>
                 </div>
+              )}
+
+              {(fiche.nomPieceTolerie || fiche.codeX3) && (
+                <>
+                  <Divider style={{ margin: '4px 0' }} />
+                  {fiche.nomPieceTolerie && (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                        <AppstoreOutlined style={{ color: COLORS.gray[400] }} />
+                        <Text type="secondary">Pièce de tôlerie</Text>
+                      </div>
+                      <Text strong style={{ fontSize: 15 }}>{fiche.nomPieceTolerie}</Text>
+                    </div>
+                  )}
+
+                  {fiche.codeX3 && (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                        <BarcodeOutlined style={{ color: COLORS.gray[400] }} />
+                        <Text type="secondary">Code X3</Text>
+                      </div>
+                      <Tag color="blue" style={{ fontSize: 14, padding: '4px 12px' }}>
+                        {fiche.codeX3}
+                      </Tag>
+                    </div>
+                  )}
+                </>
               )}
 
               <Divider style={{ margin: '4px 0' }} />
@@ -613,6 +858,82 @@ const FicheDetail: React.FC = () => {
           </Card>
         </Col>
       </Row>
+
+      {/* Modal Achat Temporaire */}
+      <Modal
+        title={editingAchat ? 'Modifier l\'achat' : 'Nouvel achat temporaire'}
+        open={achatModalVisible}
+        onCancel={() => setAchatModalVisible(false)}
+        footer={null}
+        width={600}
+      >
+        <Form
+          form={achatForm}
+          layout="vertical"
+          onFinish={handleAchatSubmit}
+        >
+          <Form.Item
+            name="designation"
+            label="Désignation"
+            rules={[{ required: true, message: 'La désignation est requise' }]}
+          >
+            <Input placeholder="Ex: Joint alternatif fournisseur B" />
+          </Form.Item>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="fournisseur" label="Fournisseur">
+                <Input placeholder="Nom du fournisseur" />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="quantite" label="Quantité">
+                <InputNumber style={{ width: '100%' }} min={0} />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="prixUnitaire" label="Prix unitaire (€)">
+                <InputNumber style={{ width: '100%' }} min={0} step={0.01} />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item name="dateDebut" label="Date début">
+                <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="dateFin" label="Date fin">
+                <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="statut" label="Statut" initialValue="EN_COURS">
+                <Select>
+                  <Select.Option value="EN_COURS">En cours</Select.Option>
+                  <Select.Option value="TERMINE">Terminé</Select.Option>
+                  <Select.Option value="ANNULE">Annulé</Select.Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item name="motif" label="Motif / Commentaire">
+            <Input.TextArea rows={3} placeholder="Ex: Rupture fournisseur principal suite à crise..." />
+          </Form.Item>
+
+          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+            <Space>
+              <Button onClick={() => setAchatModalVisible(false)}>Annuler</Button>
+              <Button type="primary" htmlType="submit">
+                {editingAchat ? 'Modifier' : 'Ajouter'}
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };

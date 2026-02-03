@@ -29,6 +29,7 @@ import {
   ClockCircleOutlined,
   FilterOutlined,
   ReloadOutlined,
+  BarcodeOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { fichesApi } from '../services/api';
@@ -119,9 +120,11 @@ const FichesList: React.FC = () => {
   const [search, setSearch] = useState('');
   const [gamme, setGamme] = useState<string | undefined>();
   const [modele, setModele] = useState<string | undefined>();
-  const [filters, setFilters] = useState<{ gammes: string[]; modeles: string[] }>({
+  const [codeX3, setCodeX3] = useState<string | undefined>();
+  const [filters, setFilters] = useState<{ gammes: string[]; modeles: string[]; codesX3: string[] }>({
     gammes: [],
     modeles: [],
+    codesX3: [],
   });
 
   // Stats
@@ -140,6 +143,7 @@ const FichesList: React.FC = () => {
         search: search || undefined,
         gamme,
         modele,
+        codeX3,
       });
       setFiches(response.data.data);
       setPagination(response.data.pagination);
@@ -149,7 +153,7 @@ const FichesList: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.limit, search, gamme, modele]);
+  }, [pagination.page, pagination.limit, search, gamme, modele, codeX3]);
 
   const loadFilters = async () => {
     try {
@@ -194,9 +198,10 @@ const FichesList: React.FC = () => {
     setSearch('');
     setGamme(undefined);
     setModele(undefined);
+    setCodeX3(undefined);
   };
 
-  const hasFilters = search || gamme || modele;
+  const hasFilters = search || gamme || modele || codeX3;
 
   const columns = [
     {
@@ -460,6 +465,22 @@ const FichesList: React.FC = () => {
                 {filters.modeles.map((m) => (
                   <Select.Option key={m} value={m}>
                     {m}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Col>
+            <Col xs={12} sm={8} md={5} lg={4}>
+              <Select
+                placeholder="Code X3"
+                value={codeX3}
+                onChange={setCodeX3}
+                allowClear
+                style={{ width: '100%' }}
+                suffixIcon={<BarcodeOutlined />}
+              >
+                {filters.codesX3.map((c) => (
+                  <Select.Option key={c} value={c}>
+                    {c}
                   </Select.Option>
                 ))}
               </Select>

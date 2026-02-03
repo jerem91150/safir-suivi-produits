@@ -35,6 +35,8 @@ interface FicheFormValues {
   organe?: string;
   valideRdLe?: dayjs.Dayjs;
   enFabricationDepuis?: dayjs.Dayjs;
+  nomPieceTolerie?: string;
+  codeX3?: string;
 }
 
 const FicheForm: React.FC = () => {
@@ -67,6 +69,8 @@ const FicheForm: React.FC = () => {
             organe: fiche.organe || '',
             valideRdLe: fiche.valideRdLe ? dayjs(fiche.valideRdLe) : null,
             enFabricationDepuis: fiche.enFabricationDepuis ? dayjs(fiche.enFabricationDepuis) : null,
+            nomPieceTolerie: fiche.nomPieceTolerie || '',
+            codeX3: fiche.codeX3 || '',
           });
         } catch (error) {
           message.error('Erreur lors du chargement de la fiche');
@@ -253,6 +257,24 @@ const FicheForm: React.FC = () => {
                 placeholder="Sélectionner une date"
                 style={{ width: 200 }}
               />
+            </Form.Item>
+          </Space>
+
+          <Divider orientation="left">Pièce de tôlerie</Divider>
+
+          <Space size="large" style={{ display: 'flex', flexWrap: 'wrap' }}>
+            <Form.Item
+              name="nomPieceTolerie"
+              label="Nom de la pièce"
+            >
+              <Input placeholder="Ex: Traverse supérieure" style={{ width: 250 }} />
+            </Form.Item>
+
+            <Form.Item
+              name="codeX3"
+              label="Code X3"
+            >
+              <Input placeholder="Ex: TOL-12345" style={{ width: 200 }} />
             </Form.Item>
           </Space>
 

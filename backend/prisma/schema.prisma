@@ -31,12 +31,16 @@ model FicheSuivi {
   description String?
   matricules  String?
 
-  // Nouveaux champs d'information
+  // Champs d'information
   fournisseur         String?
   sousEnsemble        String?
   organe              String?
   valideRdLe          DateTime?
   enFabricationDepuis DateTime?
+
+  // Pièce de tôlerie
+  nomPieceTolerie String?
+  codeX3          String?
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -44,11 +48,33 @@ model FicheSuivi {
   createurId Int
   createur   Utilisateur @relation(fields: [createurId], references: [id])
 
-  piecesJointes PieceJointe[]
+  piecesJointes    PieceJointe[]
+  achatsTemporaires AchatTemporaire[]
 
   @@index([gamme])
   @@index([modele])
+  @@index([codeX3])
   @@map("fiches_suivi")
+}
+
+// Achats temporaires (crises, ruptures, etc.)
+model AchatTemporaire {
+  id          Int      @id @default(autoincrement())
+  designation String
+  fournisseur String?
+  quantite    Int?
+  prixUnitaire Float?
+  dateDebut   DateTime?
+  dateFin     DateTime?
+  motif       String?
+  statut      String   @default("EN_COURS") // EN_COURS, TERMINE, ANNULE
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ficheId Int
+  fiche   FicheSuivi @relation(fields: [ficheId], references: [id], onDelete: Cascade)
+
+  @@map("achats_temporaires")
 }
 
 model PieceJointe {
