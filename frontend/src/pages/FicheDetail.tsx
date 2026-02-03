@@ -31,6 +31,11 @@ import {
   AppstoreOutlined,
   HomeOutlined,
   FileTextOutlined,
+  ShopOutlined,
+  PartitionOutlined,
+  ToolOutlined,
+  CheckCircleOutlined,
+  RocketOutlined,
 } from '@ant-design/icons';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { fichesApi, uploadsApi } from '../services/api';
@@ -56,6 +61,11 @@ interface Fiche {
   titre: string;
   description: string | null;
   matricules: string | null;
+  fournisseur: string | null;
+  sousEnsemble: string | null;
+  organe: string | null;
+  valideRdLe: string | null;
+  enFabricationDepuis: string | null;
   createdAt: string;
   updatedAt: string;
   createur: { id: number; nom: string; email: string | null };
@@ -485,6 +495,70 @@ const FicheDetail: React.FC = () => {
                 </div>
                 <Text strong style={{ fontSize: 15 }}>{fiche.modele}</Text>
               </div>
+
+              {fiche.fournisseur && (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <ShopOutlined style={{ color: COLORS.gray[400] }} />
+                    <Text type="secondary">Fournisseur</Text>
+                  </div>
+                  <Text strong style={{ fontSize: 15 }}>{fiche.fournisseur}</Text>
+                </div>
+              )}
+
+              {fiche.sousEnsemble && (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <PartitionOutlined style={{ color: COLORS.gray[400] }} />
+                    <Text type="secondary">Sous-ensemble</Text>
+                  </div>
+                  <Text strong style={{ fontSize: 15 }}>{fiche.sousEnsemble}</Text>
+                </div>
+              )}
+
+              {fiche.organe && (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <ToolOutlined style={{ color: COLORS.gray[400] }} />
+                    <Text type="secondary">Organe</Text>
+                  </div>
+                  <Text strong style={{ fontSize: 15 }}>{fiche.organe}</Text>
+                </div>
+              )}
+
+              <Divider style={{ margin: '4px 0' }} />
+
+              {fiche.valideRdLe && (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <CheckCircleOutlined style={{ color: COLORS.success }} />
+                    <Text type="secondary">Validé par la R&D le</Text>
+                  </div>
+                  <Text strong style={{ fontSize: 15, color: COLORS.success }}>
+                    {new Date(fiche.valideRdLe).toLocaleDateString('fr-FR', {
+                      day: '2-digit',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </Text>
+                </div>
+              )}
+
+              {fiche.enFabricationDepuis && (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <RocketOutlined style={{ color: COLORS.primary }} />
+                    <Text type="secondary">En fabrication depuis</Text>
+                  </div>
+                  <Text strong style={{ fontSize: 15 }}>
+                    {new Date(fiche.enFabricationDepuis).toLocaleDateString('fr-FR', {
+                      day: '2-digit',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </Text>
+                </div>
+              )}
 
               <Divider style={{ margin: '4px 0' }} />
 

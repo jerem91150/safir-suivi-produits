@@ -8,7 +8,10 @@ import {
   message,
   Upload,
   Spin,
+  DatePicker,
+  Divider,
 } from 'antd';
+import dayjs from 'dayjs';
 import {
   ArrowLeftOutlined,
   SaveOutlined,
@@ -27,6 +30,11 @@ interface FicheFormValues {
   titre: string;
   description?: string;
   matricules?: string;
+  fournisseur?: string;
+  sousEnsemble?: string;
+  organe?: string;
+  valideRdLe?: dayjs.Dayjs;
+  enFabricationDepuis?: dayjs.Dayjs;
 }
 
 const FicheForm: React.FC = () => {
@@ -54,6 +62,11 @@ const FicheForm: React.FC = () => {
             titre: fiche.titre,
             description: fiche.description || '',
             matricules: fiche.matricules || '',
+            fournisseur: fiche.fournisseur || '',
+            sousEnsemble: fiche.sousEnsemble || '',
+            organe: fiche.organe || '',
+            valideRdLe: fiche.valideRdLe ? dayjs(fiche.valideRdLe) : null,
+            enFabricationDepuis: fiche.enFabricationDepuis ? dayjs(fiche.enFabricationDepuis) : null,
           });
         } catch (error) {
           message.error('Erreur lors du chargement de la fiche');
@@ -72,12 +85,19 @@ const FicheForm: React.FC = () => {
     try {
       let ficheId: number;
 
+      // Convertir les dates dayjs en ISO string pour le backend
+      const payload = {
+        ...values,
+        valideRdLe: values.valideRdLe ? values.valideRdLe.toISOString() : null,
+        enFabricationDepuis: values.enFabricationDepuis ? values.enFabricationDepuis.toISOString() : null,
+      };
+
       if (isEdit) {
-        await fichesApi.update(parseInt(id), values);
+        await fichesApi.update(parseInt(id), payload);
         ficheId = parseInt(id);
         message.success('Fiche modifiée avec succès');
       } else {
-        const response = await fichesApi.create(values);
+        const response = await fichesApi.create(payload);
         ficheId = response.data.id;
         message.success('Fiche créée avec succès');
       }
@@ -186,6 +206,57 @@ const FicheForm: React.FC = () => {
               placeholder="Ex: CF30-2024-001 à CF30-2024-150"
             />
           </Form.Item>
+
+          <Divider orientation="left">Informations complémentaires</Divider>
+
+          <Space size="large" style={{ display: 'flex', flexWrap: 'wrap' }}>
+            <Form.Item
+              name="fournisseur"
+              label="Fournisseur"
+            >
+              <Input placeholder="Nom du fournisseur" style={{ width: 200 }} />
+            </Form.Item>
+
+            <Form.Item
+              name="sousEnsemble"
+              label="Sous-ensemble"
+            >
+              <Input placeholder="Ex: Châssis" style={{ width: 200 }} />
+            </Form.Item>
+
+            <Form.Item
+              name="organe"
+              label="Organe"
+            >
+              <Input placeholder="Ex: Joint" style={{ width: 200 }} />
+            </Form.Item>
+          </Space>
+
+          <Space size="large" style={{ display: 'flex', flexWrap: 'wrap' }}>
+            <Form.Item
+              name="valideRdLe"
+              label="Validé par la R&D le"
+            >
+              <DatePicker
+                format="DD/MM/YYYY"
+                placeholder="Sélectionner une date"
+                style={{ width: 200 }}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="enFabricationDepuis"
+              label="En fabrication depuis"
+            >
+              <DatePicker
+                format="DD/MM/YYYY"
+                placeholder="Sélectionner une date"
+                style={{ width: 200 }}
+              />
+            </Form.Item>
+          </Space>
+
+          <Divider />
 
           <Form.Item label="Pièces jointes">
             <Upload
